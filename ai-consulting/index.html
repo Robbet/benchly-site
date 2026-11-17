@@ -10,100 +10,92 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* Paleta z logo Benchly (Webflow) */
   :root {
-    --paper: #ffffff; --ink: #1a212b; --mute: #5d6472;
-    --brand: #2e3c7d; --lilac: #c3b7cd; --blush: #efdfe9; --hair: #e4ebf3;
+    --paper: #fbfaf8; --ink: #141a24; --mute: #6b7180;
+    --brand: #2e3c7d; --blush: #efdfe9; --hair: #e7e3ea;
     color-scheme: light;
   }
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; }
-  html, body { height: 100%; }
+  html, body { min-height: 100%; }
   body {
-    background: var(--paper); color: var(--ink);
+    background: radial-gradient(120% 80% at 50% 0%, #f6eef3 0%, var(--paper) 60%);
+    color: var(--ink); -webkit-font-smoothing: antialiased;
     font: 400 16px/1.5 Poppins, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    display: grid; place-items: center;
-    padding: calc(88px + env(safe-area-inset-top, 0px)) 16px calc(56px + env(safe-area-inset-bottom, 0px));
-    -webkit-font-smoothing: antialiased;
+    min-height: 100svh; display: flex; flex-direction: column; align-items: center;
+    padding: calc(24px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
   }
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 4px; border-radius: 8px; }
 
-  .top {
-    position: fixed; top: calc(20px + env(safe-area-inset-top, 0px)); left: 0; right: 0;
-    display: flex; justify-content: center; pointer-events: none;
-  }
-  .top a { pointer-events: auto; display: block; line-height: 0; }
-  .top img { height: 30px; width: auto; }
-  :focus-visible { outline: 2px solid var(--brand); outline-offset: 4px; border-radius: 6px; }
+  .top { line-height: 0; }
+  .top img { height: 26px; width: auto; mix-blend-mode: multiply; }
 
   main {
-    --w: min(80vw, 320px, calc((100svh - 360px) * .75));
-    width: var(--w); display: flex; flex-direction: column; align-items: center;
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: min(100%, 340px); --pw: min(100%, 320px, calc((100svh - 380px) * .75)); min-width: 220px; padding: 28px 0;
   }
-  .who { margin-bottom: 18px; text-align: center; }
-  .who h1 { font-size: 20px; font-weight: 500; letter-spacing: -.01em; }
-  .who p { font-size: 14px; color: var(--mute); margin-top: 2px; }
 
-  /* Portret 3:4, jak okno rozmowy wideo */
   .portrait {
-    position: relative; width: 100%; aspect-ratio: 3 / 4;
-    border-radius: 28px; overflow: hidden; background: var(--blush);
+    position: relative; width: var(--pw); aspect-ratio: 3 / 4; border-radius: 28px; overflow: hidden;
+    background: linear-gradient(165deg, #f3e8ef, #e3e2f1);
+    box-shadow: 0 30px 60px -28px rgba(26,33,60,.4);
   }
   .portrait img {
     width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block;
-    filter: grayscale(1); transform: scale(1.02);
-    transition: filter 1s ease, transform 1.2s cubic-bezier(.2,.7,.2,1);
+    filter: grayscale(1); transform: scale(1.03);
+    transition: filter 1s ease, transform 1.4s cubic-bezier(.2,.7,.2,1);
   }
-  .portrait.live img { filter: grayscale(0); transform: scale(1); }
+  .portrait.live img { filter: none; transform: scale(1); }
   .portrait .initials {
     position: absolute; inset: 0; display: none; place-items: center;
-    font-size: calc(var(--w) * .22); font-weight: 500; letter-spacing: -.04em; color: var(--brand);
+    font-size: clamp(64px, 10vw, 96px); font-weight: 500; letter-spacing: -.05em; color: var(--brand);
   }
   .portrait.noimg img { display: none; }
   .portrait.noimg .initials { display: grid; }
-  .portrait::after {
-    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-    box-shadow: inset 0 0 0 0 var(--brand); transition: box-shadow .4s ease;
-  }
-  .portrait.live::after { box-shadow: inset 0 0 0 3px var(--brand); }
 
-  /* Linia głosu */
-  .wave { width: 100%; height: 64px; margin: 8px 0 12px; display: block; }
+  .wave { position: absolute; left: 0; right: 0; bottom: 44px; width: 100%; height: 48px; display: block; }
+  .portrait::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(to top, rgba(20,26,48,.45), transparent 40%); opacity: 0; transition: opacity .6s ease; }
+  .portrait.live::after { opacity: 1; }
 
-  /* Przycisk */
   .call {
-    height: 52px; padding: 0 26px 0 22px; border-radius: 999px; cursor: pointer;
-    display: inline-flex; align-items: center; gap: 10px;
-    font: 500 16px/1 inherit; font-family: inherit;
-    background: var(--brand); color: #fff; border: 1.5px solid var(--brand);
+    position: relative; z-index: 1; margin-top: -36px; width: 72px; height: 72px; border-radius: 50%; cursor: pointer;
+    display: grid; place-items: center; background: var(--brand); color: #fff; border: 4px solid var(--paper);
+    box-shadow: 0 12px 28px -10px rgba(46,60,125,.7);
     transition: background-color .25s ease, color .25s ease, transform .15s ease;
   }
-  .call:hover { transform: translateY(-1px); }
-  .call:active { transform: scale(.97); }
-  .call.live { background: transparent; color: var(--brand); }
-  .call svg { width: 20px; height: 20px; flex: none; }
+  .call::before { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--brand);
+    animation: halo 2.6s ease-out infinite; pointer-events: none; }
+  @keyframes halo { from { transform: scale(1); opacity: .5; } to { transform: scale(1.45); opacity: 0; } }
+  .call:hover { transform: scale(1.05); }
+  .call:active { transform: scale(.95); }
+  .call svg { width: 28px; height: 28px; }
   .call .i-stop, .call.live .i-mic { display: none; }
   .call.live .i-stop { display: block; }
-  .call[aria-busy="true"] { opacity: .55; cursor: progress; }
+  .call.live { background: #fff; color: #c62f2f; }
+  .call.live::before { border-color: #c62f2f; }
+  .call[aria-busy="true"] { opacity: .7; cursor: progress; }
+  .call[aria-busy="true"]::before { animation-duration: 1s; }
 
-  .line {
-    margin-top: 14px; min-height: 1.5em; max-width: 34ch; text-align: center; text-wrap: balance;
-    font-size: 14px; color: var(--mute); font-variant-numeric: tabular-nums;
-  }
+  .name { margin-top: 18px; font-size: 18px; font-weight: 500; letter-spacing: -.01em; }
+  .sub { margin-top: 6px; max-width: 30ch; text-align: center; text-wrap: balance; font-size: 14.5px; color: var(--mute); }
+  .steps { margin-top: 14px; padding: 0; list-style: none; display: flex; gap: 6px 14px; flex-wrap: wrap; justify-content: center;
+    counter-reset: s; font-size: 12.5px; color: var(--mute); }
+  .steps li { counter-increment: s; display: inline-flex; align-items: center; gap: 6px; }
+  .steps li::before { content: counter(s); width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+    font-size: 11px; font-weight: 500; color: var(--brand); background: rgba(46,60,125,.08); }
+  main.live .steps, main.live .sub { display: none; }
+  .line:empty { display: none; }
+  .line { margin-top: 4px; min-height: 1.5em; text-align: center; text-wrap: balance;
+    font-size: 13.5px; color: var(--mute); font-variant-numeric: tabular-nums; }
   .line b { font-weight: 500; color: var(--brand); margin-right: .8em; }
 
-  .foot {
-    position: fixed; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    padding: 0 16px; text-align: center; font-size: 11.5px; line-height: 1.5; color: var(--mute);
-  }
-  .foot a { color: inherit; }
-  @media (max-height: 700px) {
-    body { padding-top: 24px; padding-bottom: 24px; }
-    .top { position: static; margin-bottom: 20px; }
-    body { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .foot { position: static; margin-top: 24px; }
-  }
+  .foot { font-size: 11.5px; color: var(--mute); text-align: center; opacity: .8; }
+  .foot a { color: inherit; text-underline-offset: 3px; }
 
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+  main > * { animation: rise .8s cubic-bezier(.2,.7,.2,1) both; }
+  main > :nth-child(n+2) { animation-delay: .12s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
@@ -111,28 +103,28 @@
 <header class="top"><a href="/o-projekcie/" aria-label="Benchly"><img src="/benchly-logo.jpg" alt="Benchly" width="404" height="99"></a></header>
 
 <main>
-  <div class="who"><h1>Robert Betlejewski</h1><p id="tagline">AI implementation for businesses</p></div>
   <div class="portrait" id="portrait">
     <!-- Zdjęcie: avatar.jpg obok index.html, pion 3:4 (np. 1200×1600), twarz w górnej 1/3 -->
     <img src="avatar.jpg" alt="Robert Betlejewski" onerror="this.parentElement.classList.add('noimg')">
     <div class="initials" aria-hidden="true">RB</div>
+    <canvas class="wave" id="wave" aria-hidden="true"></canvas>
   </div>
 
-  <canvas class="wave" id="wave" aria-hidden="true"></canvas>
-
-  <button class="call" id="call" type="button">
+  <button class="call" id="call" type="button" aria-label="Let's talk">
     <svg class="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>
     </svg>
     <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></svg>
-    <span id="label">Let's talk</span>
   </button>
 
-  <p class="line" id="line" aria-live="polite">Ask me about AI in your company</p>
+  <h1 class="name">Robert Betlejewski</h1>
+  <p class="sub" id="sub">Tell me what you need. I'll book you a meeting with the real Robert.</p>
+  <ol class="steps" id="steps"><li>Describe the job</li><li>See what I can do</li><li>Book a meeting</li></ol>
+  <p class="line" id="line" aria-live="polite"></p>
 </main>
 
 <footer class="foot">
-  Robert Betlejewski · <a href="/o-projekcie/">Bench Sp. z o.o.</a> (Benchly) · NIP 9662157768 · KRS 0000945460
+  <a href="/o-projekcie/">Bench Sp. z o.o.</a> · NIP 9662157768 · KRS 0000945460
 </footer>
 
 <script type="module">
@@ -142,13 +134,15 @@
   /* ========================== */
 
   const $ = (id) => document.getElementById(id);
-  const root = document.documentElement, portrait = $("portrait"), btn = $("call"), label = $("label"), line = $("line"), cv = $("wave");
+  const root = document.documentElement, portrait = $("portrait"), btn = $("call"), line = $("line"), cv = $("wave");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const demo = new URLSearchParams(location.search).has("demo");   // podgląd bez agenta: ?demo
   /* ---------- język: polski system → PL, wszystko inne → EN ---------- */
   const PL = /^pl\b/i.test((navigator.languages && navigator.languages[0]) || navigator.language || "");
   const T = PL ? {
     title: "Robert Betlejewski · porozmawiaj o AI", tagline: "Wdrożenia AI w firmach",
+    sub: "Powiedz, czego potrzebujesz. Umówię Cię na spotkanie z prawdziwym Robertem.",
+    steps: ["Opowiedz o zleceniu", "Sprawdzę, co mogę zrobić", "Umówię spotkanie"],
     idle: "Zapytaj mnie o&nbsp;AI w&nbsp;Twojej firmie", talk: "Porozmawiaj", end: "Zakończ", connecting: "Łączę…",
     speaking: "Mówię", listening: "Słucham", thanks: "Dzięki za rozmowę!",
     noMic: "Brak dostępu do mikrofonu. Zezwól na niego w przeglądarce i spróbuj ponownie.",
@@ -162,7 +156,8 @@
   };
   if (PL) {
     root.lang = "pl"; document.title = T.title;
-    $("tagline").textContent = T.tagline; label.textContent = T.talk; line.innerHTML = T.idle;
+    btn.setAttribute("aria-label", T.talk);
+    $("sub").textContent = T.sub; $("steps").innerHTML = T.steps.map(t => `<li>${t}</li>`).join("");
   }
   const IDLE = line.innerHTML;
 
@@ -207,9 +202,8 @@
     const ease = 1 - Math.pow(1 - grow, 3), x0 = w / 2 * (1 - ease), x1 = w - x0;
 
     ctx.clearRect(0, 0, w, h);
-    const ink = getComputedStyle(root).getPropertyValue("--brand").trim();
-    ctx.strokeStyle = ink; ctx.lineWidth = 1.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.globalAlpha = mode === "idle" ? .3 : 1;
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.75; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.globalAlpha = mode === "idle" ? .45 : 1;
 
     const pts = [];
     for (let i = 0; i <= N + 1; i++) {
@@ -235,22 +229,22 @@
 
   function goLive() {
     btn.removeAttribute("aria-busy");
-    btn.classList.add("live"); portrait.classList.add("live");
-    label.textContent = T.end;
+    btn.classList.add("live"); portrait.classList.add("live"); btn.parentElement.classList.add("live");
+    btn.setAttribute("aria-label", T.end);
     mode = "listening"; t0 = Date.now(); tick(); clock = setInterval(tick, 500);
   }
   function goIdle(msg) {
     clearInterval(clock); convo = null; mode = "idle";
     btn.removeAttribute("aria-busy");
-    btn.classList.remove("live"); portrait.classList.remove("live");
-    label.textContent = T.talk;
+    btn.classList.remove("live"); portrait.classList.remove("live"); btn.parentElement.classList.remove("live");
+    btn.setAttribute("aria-label", T.talk);
     line.innerHTML = msg ?? IDLE;
   }
 
   async function start() {
     if (demo) { goLive(); return; }
     if (AGENT_ID.startsWith("WKLEJ")) { line.textContent = "Brakuje AGENT_ID w pliku index.html."; return; }
-    btn.setAttribute("aria-busy", "true"); label.textContent = T.connecting; line.innerHTML = "&nbsp;";
+    btn.setAttribute("aria-busy", "true"); line.textContent = T.connecting;
     try { await navigator.mediaDevices.getUserMedia({ audio: true }); }
     catch { goIdle(T.noMic); return; }
     try {
