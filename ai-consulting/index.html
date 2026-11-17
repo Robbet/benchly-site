@@ -38,8 +38,9 @@
 
 
 
+  .wrap { flex: 1; width: 100%; max-width: 1080px; display: flex; align-items: center; justify-content: center; gap: clamp(32px, 6vw, 88px); }
   main {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center;
     width: min(100%, 340px); --pw: min(100%, 340px, calc((100svh - 380px) / 1.12)); min-width: 220px; padding: 28px 0;
   }
 
@@ -178,6 +179,45 @@
   .theme .i-sun, [data-theme="dark"] .theme .i-moon { display: none; }
   [data-theme="dark"] .theme .i-sun { display: block; }
 
+
+  /* ================= PROCES ================= */
+  .process { width: min(100%, 440px); }
+  .process h2 { font-size: 12px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; color: var(--role); margin-bottom: 12px; }
+  .process ol { list-style: none; padding: 0; margin: 0; position: relative; }
+  .process ol::before { content: ""; position: absolute; left: 15px; top: 18px; bottom: 18px; width: 1.5px; background: var(--hair); }
+  .step { position: relative; padding-left: 46px; margin-bottom: 8px; }
+  .step::before { content: attr(data-n); position: absolute; left: 0; top: 10px; width: 32px; height: 32px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 13px; font-weight: 600; color: #fff; background: var(--brand);
+    box-shadow: 0 0 0 4px var(--bg1); }
+  .step.paid::before { background: linear-gradient(155deg, #5a5aa6, #a99ac6); }
+  .step details { background: var(--card); border: 1px solid var(--hair); border-radius: 16px; padding: 10px 14px;
+    transition: border-color .25s ease, box-shadow .25s ease; }
+  .step details:hover, .step details[open] { border-color: rgba(90,90,166,.45); box-shadow: 0 10px 28px -18px rgba(46,60,125,.5); }
+  .step summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; }
+  .step summary::-webkit-details-marker { display: none; }
+  .step .t { font-size: 14.5px; font-weight: 500; color: var(--ink); }
+  .step .price { font-size: 12px; font-weight: 500; white-space: nowrap; padding: 2px 9px; border-radius: 999px; color: var(--role); background: rgba(90,90,166,.12); }
+  .step .free { color: #1f7a4d; background: rgba(47,191,113,.14); }
+  [data-theme="dark"] .step .free { color: #7ee0aa; }
+  .step .s { grid-column: 1 / -1; font-size: 13px; color: var(--mute); }
+  .step summary .s::after { content: " ›"; color: var(--role); }
+  .step details[open] summary .s::after { content: ""; }
+  .step .more { margin-top: 8px; font-size: 13px; line-height: 1.55; color: var(--ink); }
+  .step .more ul { margin: 6px 0 0; padding-left: 18px; }
+  .step .ex { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12.5px; font-weight: 500; color: var(--role); text-decoration: none; }
+  .step .ex:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .step .ex[hidden] { display: none; }
+  .gate { margin: 2px 0 10px 46px; font-size: 12px; color: var(--mute); font-style: italic; }
+  .eu-top { display: none; }
+  @media (max-width: 979px) {
+    .wrap { flex-direction: column; gap: 8px; }
+    .process { margin-bottom: 24px; }
+    .eu-top { display: block; width: 100%; max-width: 420px; margin: 34px auto 0; }
+    .eu-top img { width: 100%; height: auto; display: block; mix-blend-mode: multiply; }
+    [data-theme="dark"] .eu-top img { mix-blend-mode: normal; background: #fff; border-radius: 8px; padding: 4px 8px; box-sizing: border-box; }
+    .foot .eu { display: none; }
+  }
+
   main > * { animation: rise .8s cubic-bezier(.2,.7,.2,1) both; }
   main > :nth-child(n+2) { animation-delay: .12s; }
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
@@ -194,6 +234,8 @@
 </button>
 <header class="top"><a href="/o-projekcie/" aria-label="Benchly · Bench Sp. z o.o."><img src="/benchly-logo.jpg" alt="Benchly" width="404" height="99"></a></header>
 
+<div class="eu-top"><img src="/fe-popw-ue-efrr.png" alt="Fundusze Europejskie – Polska Wschodnia · Rzeczpospolita Polska · Unia Europejska – Europejski Fundusz Rozwoju Regionalnego" width="1400" height="195"></div>
+<div class="wrap">
 <main>
   <div class="avatar" id="portrait" role="button" tabindex="0" aria-label="Let's talk">
     <div class="orb"></div>
@@ -211,7 +253,6 @@
 
   <p class="role">AI Consultant</p>
   <h1 class="name">Robert Betlejewski</h1>
-  <ol class="steps" id="steps"><li>Describe the job</li><li>See what I can do</li><li>Book a meeting</li></ol>
   <p class="line" id="line" aria-live="polite"></p>
   <section class="summary" id="summary" aria-live="polite" hidden>
     <h2 id="sumTitle">Summary</h2>
@@ -222,6 +263,37 @@
     </div>
   </section>
 </main>
+
+<aside class="process" id="process" aria-labelledby="procTitle">
+  <h2 id="procTitle">How I work</h2>
+  <ol>
+    <li class="step" data-n="1"><details>
+      <summary><span class="t" data-pl="Rozmowa z asystentem AI">Talk to my AI assistant</span><span class="price free" data-pl="Bezpłatnie">Free</span>
+        <span class="s" data-pl="Kto, jaka firma, jaka strona – a z tego due diligence">Who you are, your company, your website – then due diligence</span></summary>
+      <div class="more" data-pl="Ten asystent zbiera podstawowe informacje: kto dzwoni, jaka firma, jaka strona i czego potrzebujecie. Na tej podstawie robię due diligence firmy – wszystko, co da się znaleźć w internecie – i przygotowuję kontekst do naszej rozmowy.">This assistant collects the basics: who you are, your company, your website and what you need. From that I run a due diligence of the company – everything that can be found online – and prepare the context for our meeting.</div>
+      <a class="ex" hidden data-src="przyklady/due-diligence.pdf" target="_blank" rel="noopener" data-pl="Zobacz przykład due diligence (PDF) ↗">See a sample due diligence (PDF) ↗</a>
+    </details></li>
+    <li class="step" data-n="2"><details>
+      <summary><span class="t" data-pl="Godzinne spotkanie">One-hour meeting</span><span class="price free" data-pl="Bezpłatnie">Free</span>
+        <span class="s" data-pl="Rozmowa z transkrypcją i wstępny plan automatyzacji">A recorded conversation and a first automation outline</span></summary>
+      <div class="more" data-pl="Spokojna rozmowa z właścicielem lub zarządem, z transkrypcją. Wybieramy pierwsze cele AI i automatyzacji. Od razu po spotkaniu z transkrypcji, wywiadu i due diligence powstaje podsumowanie i wstępny zarys: co i jak można zautomatyzować.">A calm conversation with the owners or management, transcribed. We pick the first AI and automation goals. Right after the meeting, the transcript, the interview and the due diligence turn into a summary and a first outline of what can be automated and how.</div>
+      <a class="ex" hidden data-src="przyklady/podsumowanie-spotkania.html" target="_blank" rel="noopener" data-pl="Zobacz przykładowe podsumowanie i plan ↗">See a sample summary and plan ↗</a>
+    </details></li>
+    <li class="step paid" data-n="3"><details>
+      <summary><span class="t" data-pl="Dzień próbny wdrożenia">Pilot day</span><span class="price" data-pl="2 500 zł netto">PLN 2,500 net</span>
+        <span class="s" data-pl="Jeden proces usprawniony w jeden dzień">One process improved in one day</span></summary>
+      <div class="more" data-pl="Jeśli pierwsze dwa kroki Wam się spodobają: wybieramy jeden proces, który da się usprawnić w ciągu dnia, analizuję go i wdrażam.<ul><li>szkolenie zespołu, np. instalacja i praca z Claude’em lub chatbotem, którego już używacie</li><li>integracje z Waszymi narzędziami</li><li>artefakt lub mini‑aplikacja, np. w AI Studio, która automatyzuje ten proces</li></ul>">If you liked the first two steps: we pick one process that can be improved within a day, and I analyse and implement it.<ul><li>team training, e.g. installing and working with Claude or the chatbot you already use</li><li>integrations with your tools</li><li>an artifact or mini app, e.g. in AI Studio, that automates the process</li></ul></div>
+    </details></li>
+    <li class="gate" data-pl="Jeśli dzień próbny się spodoba – ruszamy dalej">If the pilot day works for you – we carry on</li>
+    <li class="step paid" data-n="4"><details>
+      <summary><span class="t" data-pl="Tydzień mapowania procesów">Process mapping week</span><span class="price" data-pl="10 000 zł netto">PLN 10,000 net</span>
+        <span class="s" data-pl="Mapa automatyzacji i wybór szybkich wygranych">An automation map and the quick wins</span></summary>
+      <div class="more" data-pl="Wywiady z pracownikami (także przez agentów głosowych, takich jak ten), lista procesów w organizacji, mapa automatyzacji i wybór „low hanging fruits” – tego, co da się zautomatyzować szybko i tanio.">Interviews with your staff (also by voice agents like this one), a list of the processes in your organisation, an automation map and the low-hanging fruit – what can be automated quickly and cheaply.</div>
+      <a class="ex" hidden data-src="przyklady/mapa-automatyzacji.html" target="_blank" rel="noopener" data-pl="Zobacz przykładową mapę automatyzacji ↗">See a sample automation map ↗</a>
+    </details></li>
+  </ol>
+</aside>
+</div>
 
 <footer class="foot">
   <a class="eu" href="/o-projekcie/" aria-label="Fundusze Europejskie Polska Wschodnia, Rzeczpospolita Polska, Unia Europejska, Europejski Fundusz Rozwoju Regionalnego">
@@ -273,7 +345,6 @@
   if (PL) {
     root.lang = "pl"; document.title = T.title;
     btn.setAttribute("aria-label", T.talk); portrait.setAttribute("aria-label", T.talk);
-    $("steps").innerHTML = T.steps.map(t => `<li>${t}</li>`).join("");
   }
   const IDLE = line.innerHTML;
 
@@ -333,6 +404,16 @@
   }
   requestAnimationFrame(frame);
 
+
+
+  /* ---------- proces: język + przykłady widoczne tylko, gdy plik istnieje ---------- */
+  if (PL) {
+    $("procTitle").textContent = "Jak pracuję";
+    document.querySelectorAll("#process [data-pl]").forEach(el => { el.innerHTML = el.dataset.pl; });
+  }
+  document.querySelectorAll("#process .ex[data-src]").forEach(async (a) => {
+    try { const r = await fetch(a.dataset.src, { method: "HEAD" }); if (r.ok) { a.href = a.dataset.src; a.hidden = false; } } catch {}
+  });
 
   /* ---------- tryb jasny / ciemny ---------- */
   const themeBtn = $("theme");
