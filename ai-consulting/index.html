@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Robert Betlejewski · porozmawiaj o AI</title>
-<meta name="description" content="Zadaj pytanie o wdrożenie AI w firmie. Odpowiada głosowy agent Roberta Betlejewskiego.">
+<title>Robert Betlejewski · talk about AI</title>
+<meta name="description" content="Ask about bringing AI into your company. Robert Betlejewski's voice agent answers.">
 <link rel="icon" href="/benchly-logo.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,7 +111,7 @@
 <header class="top"><a href="/o-projekcie/" aria-label="Benchly"><img src="/benchly-logo.jpg" alt="Benchly" width="404" height="99"></a></header>
 
 <main>
-  <div class="who"><h1>Robert Betlejewski</h1><p>Wdrożenia AI w firmach</p></div>
+  <div class="who"><h1>Robert Betlejewski</h1><p id="tagline">AI implementation for businesses</p></div>
   <div class="portrait" id="portrait">
     <!-- Zdjęcie: avatar.jpg obok index.html, pion 3:4 (np. 1200×1600), twarz w górnej 1/3 -->
     <img src="avatar.jpg" alt="Robert Betlejewski" onerror="this.parentElement.classList.add('noimg')">
@@ -125,10 +125,10 @@
       <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>
     </svg>
     <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></svg>
-    <span id="label">Porozmawiaj</span>
+    <span id="label">Let's talk</span>
   </button>
 
-  <p class="line" id="line" aria-live="polite">Zapytaj mnie o&nbsp;AI w&nbsp;Twojej firmie</p>
+  <p class="line" id="line" aria-live="polite">Ask me about AI in your company</p>
 </main>
 
 <footer class="foot">
@@ -145,6 +145,25 @@
   const root = document.documentElement, portrait = $("portrait"), btn = $("call"), label = $("label"), line = $("line"), cv = $("wave");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const demo = new URLSearchParams(location.search).has("demo");   // podgląd bez agenta: ?demo
+  /* ---------- język: polski system → PL, wszystko inne → EN ---------- */
+  const PL = /^pl\b/i.test((navigator.languages && navigator.languages[0]) || navigator.language || "");
+  const T = PL ? {
+    title: "Robert Betlejewski · porozmawiaj o AI", tagline: "Wdrożenia AI w firmach",
+    idle: "Zapytaj mnie o&nbsp;AI w&nbsp;Twojej firmie", talk: "Porozmawiaj", end: "Zakończ", connecting: "Łączę…",
+    speaking: "Mówię", listening: "Słucham", thanks: "Dzięki za rozmowę!",
+    noMic: "Brak dostępu do mikrofonu. Zezwól na niego w przeglądarce i spróbuj ponownie.",
+    dropped: "Rozmowa się przerwała. Spróbuj ponownie.", failed: "Nie udało się połączyć. Sprawdź internet i spróbuj ponownie.",
+  } : {
+    title: "Robert Betlejewski · talk about AI", tagline: "AI implementation for businesses",
+    idle: "Ask me about AI in your company", talk: "Let's talk", end: "End call", connecting: "Connecting…",
+    speaking: "Speaking", listening: "Listening", thanks: "Thanks for the chat!",
+    noMic: "No microphone access. Allow it in your browser and try again.",
+    dropped: "The call dropped. Please try again.", failed: "Couldn't connect. Check your internet and try again.",
+  };
+  if (PL) {
+    root.lang = "pl"; document.title = T.title;
+    $("tagline").textContent = T.tagline; label.textContent = T.talk; line.innerHTML = T.idle;
+  }
   const IDLE = line.innerHTML;
 
   /* ---------- linia głosu ---------- */
@@ -212,42 +231,43 @@
   /* ---------- rozmowa ---------- */
   let Conversation = null, clock = 0, t0 = 0;
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-  const tick = () => { line.innerHTML = `<b>${mode === "speaking" ? "Mówię" : "Słucham"}</b>${fmt(Math.floor((Date.now() - t0) / 1000))}`; };
+  const tick = () => { line.innerHTML = `<b>${mode === "speaking" ? T.speaking : T.listening}</b>${fmt(Math.floor((Date.now() - t0) / 1000))}`; };
 
   function goLive() {
     btn.removeAttribute("aria-busy");
     btn.classList.add("live"); portrait.classList.add("live");
-    label.textContent = "Zakończ";
+    label.textContent = T.end;
     mode = "listening"; t0 = Date.now(); tick(); clock = setInterval(tick, 500);
   }
   function goIdle(msg) {
     clearInterval(clock); convo = null; mode = "idle";
     btn.removeAttribute("aria-busy");
     btn.classList.remove("live"); portrait.classList.remove("live");
-    label.textContent = "Porozmawiaj";
+    label.textContent = T.talk;
     line.innerHTML = msg ?? IDLE;
   }
 
   async function start() {
     if (demo) { goLive(); return; }
     if (AGENT_ID.startsWith("WKLEJ")) { line.textContent = "Brakuje AGENT_ID w pliku index.html."; return; }
-    btn.setAttribute("aria-busy", "true"); label.textContent = "Łączę…"; line.innerHTML = "&nbsp;";
+    btn.setAttribute("aria-busy", "true"); label.textContent = T.connecting; line.innerHTML = "&nbsp;";
     try { await navigator.mediaDevices.getUserMedia({ audio: true }); }
-    catch { goIdle("Brak dostępu do mikrofonu. Zezwól na niego w przeglądarce i spróbuj ponownie."); return; }
+    catch { goIdle(T.noMic); return; }
     try {
       Conversation ??= (await import(SDK)).Conversation;
       const opts = {
         agentId: AGENT_ID,
+        ...(PL ? { overrides: { agent: { language: "pl" } } } : {}),
         onConnect: goLive,
-        onDisconnect: () => convo && goIdle("Dzięki za rozmowę."),
-        onError: (e) => { console.error(e); goIdle("Rozmowa się przerwała. Spróbuj ponownie."); },
+        onDisconnect: () => convo && goIdle(T.thanks),
+        onError: (e) => { console.error(e); goIdle(T.dropped); },
         onModeChange: ({ mode: m }) => { mode = m === "speaking" ? "speaking" : "listening"; tick(); },
       };
       try { convo = await Conversation.startSession({ ...opts, connectionType: "webrtc" }); }      // szybciej
       catch (e) { console.warn("WebRTC niedostępne, przechodzę na WebSocket", e);
                   convo = await Conversation.startSession({ ...opts, connectionType: "websocket" }); }
     } catch (e) {
-      console.error(e); goIdle("Nie udało się połączyć. Sprawdź internet i spróbuj ponownie.");
+      console.error(e); goIdle(T.failed);
     }
   }
 
@@ -256,7 +276,7 @@
     if (mode !== "idle") {
       const c = convo; convo = null;
       try { await c?.endSession(); } catch {}
-      goIdle("Dzięki za rozmowę.");
+      goIdle(T.thanks);
     } else start();
   });
 
