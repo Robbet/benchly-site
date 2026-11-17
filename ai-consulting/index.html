@@ -320,7 +320,10 @@
   requestAnimationFrame(bgFrame);
 
   /* ---------- rozmowa ---------- */
-  let Conversation = null, clock = 0, t0 = 0;
+  let Conversation = null, clock = 0, t0 = 0, warn = 0;
+  const MAX_SECS = 600;   // limit rozmowy ustawiony w ElevenLabs
+  const WARN = PL ? "[Informacja systemowa] Do końca rozmowy została około minuta. Powiedz to rozmówcy, zbierz brakujący kontakt i przejdź do podsumowania oraz potwierdzenia."
+                  : "[System note] About one minute of the conversation is left. Tell the caller, collect any missing contact details and move to the summary and confirmation.";
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   const tick = () => { line.innerHTML = `<b>${mode === "speaking" ? T.speaking : T.listening}</b>${fmt(Math.floor((Date.now() - t0) / 1000))}`; };
 
@@ -329,9 +332,10 @@
     btn.classList.add("live"); portrait.classList.add("live"); btn.parentElement.classList.add("live");
     btn.setAttribute("aria-label", T.end); portrait.setAttribute("aria-label", T.end);
     mode = "listening"; t0 = Date.now(); tick(); clock = setInterval(tick, 500);
+    warn = setTimeout(() => { try { convo?.sendContextualUpdate?.(WARN); } catch (e) { console.warn(e); } }, (MAX_SECS - 60) * 1000);
   }
   function goIdle(msg) {
-    clearInterval(clock); convo = null; mode = "idle";
+    clearInterval(clock); clearTimeout(warn); convo = null; mode = "idle";
     btn.removeAttribute("aria-busy");
     btn.classList.remove("live"); portrait.classList.remove("live"); btn.parentElement.classList.remove("live");
     btn.setAttribute("aria-label", T.talk); portrait.setAttribute("aria-label", T.talk);
