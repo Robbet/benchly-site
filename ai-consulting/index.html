@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Robert Betlejewski · porozmawiaj o AI</title>
+<meta name="description" content="Zadaj pytanie o wdrożenie AI w firmie. Odpowiada głosowy agent Roberta Betlejewskiego.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ffffff; --ink: #000000; --mute: #636363;
+    --well: #efefef; --hair: rgba(0,0,0,.14);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #000000; --ink: #ffffff; --mute: #9c9c9c; --well: #161616; --hair: rgba(255,255,255,.18);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #000000; --ink: #ffffff; --mute: #9c9c9c; --well: #161616; --hair: rgba(255,255,255,.18);
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font: 400 16px/1.45 "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: grid; place-items: center;
+    padding: calc(64px + env(safe-area-inset-top, 0px)) 24px calc(32px + env(safe-area-inset-bottom, 0px));
+    transition: background-color .5s ease, color .5s ease;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .theme {
+    position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px;
+    width: 44px; height: 44px; border: 0; border-radius: 50%;
+    background: transparent; color: var(--ink); cursor: pointer; display: grid; place-items: center;
+  }
+  .theme svg { width: 22px; height: 22px; transition: transform .5s cubic-bezier(.5,0,.2,1); }
+  :root[data-theme="dark"] .theme svg { transform: rotate(180deg); }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+
+  main {
+    --w: min(80vw, 340px, calc((100svh - 300px) * .75));
+    width: var(--w); display: flex; flex-direction: column; align-items: center;
+  }
+
+  /* Portret 3:4, jak okno rozmowy wideo */
+  .portrait {
+    position: relative; width: 100%; aspect-ratio: 3 / 4;
+    border-radius: 28px; overflow: hidden; background: var(--well);
+  }
+  .portrait img {
+    width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block;
+    filter: grayscale(1); transform: scale(1.02);
+    transition: filter 1s ease, transform 1.2s cubic-bezier(.2,.7,.2,1);
+  }
+  .portrait.live img { filter: grayscale(0); transform: scale(1); }
+  .portrait .initials {
+    position: absolute; inset: 0; display: none; place-items: center;
+    font-size: calc(var(--w) * .22); font-weight: 500; letter-spacing: -.04em; color: var(--mute);
+  }
+  .portrait.noimg img { display: none; }
+  .portrait.noimg .initials { display: grid; }
+
+  /* Linia głosu */
+  .wave { width: 100%; height: 64px; margin: 8px 0 12px; display: block; }
+
+  /* Przycisk */
+  .call {
+    height: 52px; padding: 0 26px 0 22px; border-radius: 999px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 10px;
+    font: 500 16px/1 inherit; font-family: inherit; letter-spacing: -.005em;
+    background: var(--ink); color: var(--paper); border: 1.5px solid var(--ink);
+    transition: background-color .25s ease, color .25s ease, transform .15s ease;
+  }
+  .call:hover { transform: translateY(-1px); }
+  .call:active { transform: scale(.97); }
+  .call.live { background: transparent; color: var(--ink); }
+  .call svg { width: 20px; height: 20px; flex: none; }
+  .call .i-stop, .call.live .i-mic { display: none; }
+  .call.live .i-stop { display: block; }
+  .call[aria-busy="true"] { opacity: .55; cursor: progress; }
+
+  .line {
+    margin-top: 14px; min-height: 1.45em; max-width: 34ch; text-align: center; text-wrap: balance;
+    font-size: 14px; color: var(--mute); font-variant-numeric: tabular-nums;
+  }
+  .line b { font-weight: 500; color: var(--ink); margin-right: .8em; }
+
+  .foot {
+    position: fixed; left: 0; right: 0; bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 0 16px; text-align: center; font-size: 11.5px; line-height: 1.5; color: var(--mute);
+  }
+  .foot a { color: inherit; }
+  @media (max-height: 640px) { .foot { position: static; margin-top: 24px; } }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<button class="theme" id="theme" type="button" aria-label="Przełącz motyw">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor"/>
+  </svg>
+</button>
+
+<main>
+  <div class="portrait" id="portrait">
+    <!-- Zdjęcie: avatar.jpg obok index.html, pion 3:4 (np. 1200×1600), twarz w górnej 1/3 -->
+    <img src="avatar.jpg" alt="Robert Betlejewski" onerror="this.parentElement.classList.add('noimg')">
+    <div class="initials" aria-hidden="true">RB</div>
+  </div>
+
+  <canvas class="wave" id="wave" aria-hidden="true"></canvas>
+
+  <button class="call" id="call" type="button">
+    <svg class="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>
+    </svg>
+    <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></svg>
+    <span id="label">Porozmawiaj</span>
+  </button>
+
+  <p class="line" id="line" aria-live="polite">Zapytaj mnie o&nbsp;AI w&nbsp;Twojej firmie</p>
+</main>
+
+<footer class="foot">
+  Robert Betlejewski · <a href="/">Bench Sp. z o.o.</a> (Benchly) · NIP 9662157768 · KRS 0000945460
+</footer>
+
+<script type="module">
+  /* ====== KONFIGURACJA ====== */
+  const AGENT_ID = "agent_6401k8jvkje2ej789hw4g32wehje";   // Robert Betlejewski AVATAR
+  const SDK = "https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.33.0/+esm";
+  /* ========================== */
+
+  const $ = (id) => document.getElementById(id);
+  const root = document.documentElement, portrait = $("portrait"), btn = $("call"), label = $("label"), line = $("line"), cv = $("wave");
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const demo = new URLSearchParams(location.search).has("demo");   // podgląd bez agenta: ?demo
+  const IDLE = line.innerHTML;
+
+  /* ---------- motyw ---------- */
+  const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  const themeLabel = () => $("theme").setAttribute("aria-label", isDark() ? "Włącz jasny motyw" : "Włącz ciemny motyw");
+  try { const t = localStorage.getItem("theme"); if (t) root.dataset.theme = t; } catch {}
+  $("theme").addEventListener("click", () => {
+    root.dataset.theme = isDark() ? "light" : "dark";
+    try { localStorage.setItem("theme", root.dataset.theme); } catch {}
+    themeLabel();
+  });
+  themeLabel();
+
+  /* ---------- linia głosu ---------- */
+  const N = 26, ctx = cv.getContext("2d"), amp = new Float32Array(N);
+  let mode = "idle", convo = null, draw0 = performance.now();
+
+  function resize() {
+    const d = devicePixelRatio || 1;
+    cv.width = cv.clientWidth * d; cv.height = cv.clientHeight * d; ctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  addEventListener("resize", resize); resize();
+
+  function spectrum(src) {                         // środek linii = niskie tony, brzegi = wysokie
+    const out = new Float32Array(N);
+    if (!src || !src.length) return out;
+    const usable = Math.floor(src.length * .3), half = N / 2;
+    for (let i = 0; i < N; i++) {
+      const k = Math.abs(i - half + .5) / half;
+      out[i] = src[Math.floor(k * (usable - 1))] / 255;
+    }
+    return out;
+  }
+  function fake(t, scale) {                        // tylko ?demo
+    const out = new Float32Array(N), half = N / 2;
+    for (let i = 0; i < N; i++) {
+      const k = Math.abs(i - half + .5) / half;
+      out[i] = scale * (1 - k * .7) * (.55 + .45 * Math.sin(t / 90 + i * 1.7)) * (.7 + .3 * Math.sin(t / 310));
+    }
+    return out;
+  }
+
+  function draw(t) {
+    const w = cv.clientWidth, h = cv.clientHeight, mid = h / 2;
+    let target = null;
+    if (demo && mode !== "idle") target = fake(t, mode === "speaking" ? 1 : .25);
+    else if (convo && mode === "speaking") target = spectrum(convo.getOutputByteFrequencyData?.());
+    else if (convo && mode === "listening") target = spectrum(convo.getInputByteFrequencyData?.()).map(v => v * .5);
+    for (let i = 0; i < N; i++) amp[i] += ((target ? target[i] : 0) - amp[i]) * .22;
+
+    const grow = reduced ? 1 : Math.min(1, (t - draw0) / 900);   // na starcie linia rośnie od środka
+    const ease = 1 - Math.pow(1 - grow, 3), x0 = w / 2 * (1 - ease), x1 = w - x0;
+
+    ctx.clearRect(0, 0, w, h);
+    const ink = getComputedStyle(root).getPropertyValue("--ink").trim();
+    ctx.strokeStyle = ink; ctx.lineWidth = 1.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.globalAlpha = mode === "idle" ? .3 : 1;
+
+    const pts = [];
+    for (let i = 0; i <= N + 1; i++) {
+      const u = i / (N + 1), env = Math.sin(Math.PI * u);
+      const a = i === 0 || i === N + 1 ? 0 : amp[i - 1];
+      pts.push([x0 + (x1 - x0) * u, mid + (i % 2 ? -1 : 1) * Math.pow(a, .7) * env * (h * .48)]);
+    }
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const xc = (pts[i][0] + pts[i + 1][0]) / 2, yc = (pts[i][1] + pts[i + 1][1]) / 2;
+      ctx.quadraticCurveTo(pts[i][0], pts[i][1], xc, yc);
+    }
+    ctx.lineTo(pts.at(-1)[0], pts.at(-1)[1]); ctx.stroke();
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  /* ---------- rozmowa ---------- */
+  let Conversation = null, clock = 0, t0 = 0;
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const tick = () => { line.innerHTML = `<b>${mode === "speaking" ? "Mówię" : "Słucham"}</b>${fmt(Math.floor((Date.now() - t0) / 1000))}`; };
+
+  function goLive() {
+    btn.removeAttribute("aria-busy");
+    btn.classList.add("live"); portrait.classList.add("live");
+    label.textContent = "Zakończ";
+    mode = "listening"; t0 = Date.now(); tick(); clock = setInterval(tick, 500);
+  }
+  function goIdle(msg) {
+    clearInterval(clock); convo = null; mode = "idle";
+    btn.removeAttribute("aria-busy");
+    btn.classList.remove("live"); portrait.classList.remove("live");
+    label.textContent = "Porozmawiaj";
+    line.innerHTML = msg ?? IDLE;
+  }
+
+  async function start() {
+    if (demo) { goLive(); return; }
+    if (AGENT_ID.startsWith("WKLEJ")) { line.textContent = "Brakuje AGENT_ID w pliku index.html."; return; }
+    btn.setAttribute("aria-busy", "true"); label.textContent = "Łączę…"; line.innerHTML = "&nbsp;";
+    try { await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch { goIdle("Brak dostępu do mikrofonu. Zezwól na niego w przeglądarce i spróbuj ponownie."); return; }
+    try {
+      Conversation ??= (await import(SDK)).Conversation;
+      const opts = {
+        agentId: AGENT_ID,
+        onConnect: goLive,
+        onDisconnect: () => convo && goIdle("Dzięki za rozmowę."),
+        onError: (e) => { console.error(e); goIdle("Rozmowa się przerwała. Spróbuj ponownie."); },
+        onModeChange: ({ mode: m }) => { mode = m === "speaking" ? "speaking" : "listening"; tick(); },
+      };
+      try { convo = await Conversation.startSession({ ...opts, connectionType: "webrtc" }); }      // szybciej
+      catch (e) { console.warn("WebRTC niedostępne, przechodzę na WebSocket", e);
+                  convo = await Conversation.startSession({ ...opts, connectionType: "websocket" }); }
+    } catch (e) {
+      console.error(e); goIdle("Nie udało się połączyć. Sprawdź internet i spróbuj ponownie.");
+    }
+  }
+
+  btn.addEventListener("click", async () => {
+    if (btn.getAttribute("aria-busy")) return;
+    if (mode !== "idle") {
+      const c = convo; convo = null;
+      try { await c?.endSession(); } catch {}
+      goIdle("Dzięki za rozmowę.");
+    } else start();
+  });
+
+  if (demo) setInterval(() => { if (mode !== "idle") mode = (Math.sin(Date.now() / 1100) + 1) / 2 > .4 ? "speaking" : "listening"; }, 200);
+</script>
+</body>
+</html>
