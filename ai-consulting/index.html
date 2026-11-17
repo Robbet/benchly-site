@@ -128,7 +128,9 @@
   .summary h2 { font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--brand); margin-bottom: 8px; }
   .summary dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13.5px; }
   .summary dt { color: var(--mute); }
-  .summary dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+  .summary dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; border-radius: 6px; }
+  .summary dd.fresh { animation: fresh 1.6s ease-out; }
+  @keyframes fresh { from { background: var(--spot); box-shadow: 0 0 0 4px var(--spot); } }
   main:has(.summary:not([hidden])) .avatar { width: min(var(--pw), 46vw, 200px); }
   main:has(.summary:not([hidden])) .steps { display: none; }
   .line { margin-top: 4px; min-height: 1.5em; text-align: center; text-wrap: balance;
@@ -238,14 +240,14 @@
     steps: ["Opowiedz o zleceniu", "Sprawdzę, co mogę zrobić", "Umówię spotkanie"],
     idle: "Zapytaj mnie o&nbsp;AI w&nbsp;Twojej firmie", talk: "Porozmawiaj", end: "Zakończ", connecting: "Łączę…",
     speaking: "Mówię", listening: "Słucham", thanks: "Dzięki za rozmowę!",
-    sum: { title: "Podsumowanie rozmowy", name: "Imię", company: "Firma", need: "Potrzeba", contact: "Kontakt", meeting: "Spotkanie", next_step: "Dalej" },
+    sum: { title: "Podsumowanie rozmowy", live: "Notatki z rozmowy", name: "Imię", company: "Firma", website: "Strona", need: "Potrzeba", contact: "Kontakt", meeting: "Spotkanie", next_step: "Dalej" },
     noMic: "Brak dostępu do mikrofonu. Zezwól na niego w przeglądarce i spróbuj ponownie.",
     dropped: "Rozmowa się przerwała. Spróbuj ponownie.", failed: "Nie udało się połączyć. Sprawdź internet i spróbuj ponownie.",
   } : {
     title: "Robert Betlejewski · talk about AI", tagline: "AI implementation for businesses",
     idle: "Ask me about AI in your company", talk: "Let's talk", end: "End call", connecting: "Connecting…",
     speaking: "Speaking", listening: "Listening", thanks: "Thanks for the chat!",
-    sum: { title: "Call summary", name: "Name", company: "Company", need: "Need", contact: "Contact", meeting: "Meeting", next_step: "Next" },
+    sum: { title: "Call summary", live: "Call notes", name: "Name", company: "Company", website: "Website", need: "Need", contact: "Contact", meeting: "Meeting", next_step: "Next" },
     noMic: "No microphone access. Allow it in your browser and try again.",
     dropped: "The call dropped. Please try again.", failed: "Couldn't connect. Check your internet and try again.",
   };
@@ -257,16 +259,29 @@
   const IDLE = line.innerHTML;
 
   /* ---------- podsumowanie (client tool "show_summary" wołany przez agenta) ---------- */
-  function showSummary(p = {}) {
+  // Agent woła show_summary na bieżąco, gdy rozmówca poda nowe dane. Strona dopisuje pola (merge)
+  // i pokazuje kartę dopiero, gdy pojawi się coś więcej niż samo imię.
+  const FIELDS = ["name", "company", "website", "need", "contact", "meeting", "next_step"];
+  let notes = {};
+  function renderSummary(changed = []) {
     const list = $("sumList"); list.replaceChildren();
-    $("sumTitle").textContent = T.sum.title;
-    for (const k of ["name", "company", "need", "contact", "meeting", "next_step"]) {
-      const v = String(p[k] ?? "").trim().slice(0, 300);
-      if (!v) continue;
+    $("sumTitle").textContent = mode === "idle" ? T.sum.title : T.sum.live;
+    for (const k of FIELDS) {
+      if (!notes[k]) continue;
       const dt = document.createElement("dt"), dd = document.createElement("dd");
-      dt.textContent = T.sum[k]; dd.textContent = v; list.append(dt, dd);
+      dt.textContent = T.sum[k]; dd.textContent = notes[k];
+      if (changed.includes(k)) dd.classList.add("fresh");
+      list.append(dt, dd);
     }
-    $("summary").hidden = !list.children.length;
+    $("summary").hidden = !FIELDS.some(k => k !== "name" && notes[k]);
+  }
+  function showSummary(p = {}) {
+    const changed = [];
+    for (const k of FIELDS) {
+      const v = String(p[k] ?? "").trim().slice(0, 300);
+      if (v && v !== notes[k]) { notes[k] = v; changed.push(k); }
+    }
+    renderSummary(changed);
     return "shown";
   }
 
@@ -339,12 +354,20 @@
     btn.removeAttribute("aria-busy");
     btn.classList.remove("live"); portrait.classList.remove("live"); btn.parentElement.classList.remove("live");
     btn.setAttribute("aria-label", T.talk); portrait.setAttribute("aria-label", T.talk);
-    line.innerHTML = msg ?? IDLE;
+    line.innerHTML = msg ?? IDLE; renderSummary();
   }
 
   async function start() {
-    $("summary").hidden = true;
-    if (demo) { goLive(); setTimeout(() => showSummary({ name: "Anna Kowalska", company: "Kowalski Logistics", need: PL ? "Automatyzacja ofertowania i odpowiedzi na maile" : "Automating quotes and email replies", contact: "anna@kowalski.pl", meeting: PL ? "wtorek 25.11, 14:00 · Google Meet" : "Tuesday 25 Nov, 14:00 · Google Meet", next_step: PL ? "Zaproszenie wysłane mailem" : "Invite sent by email" }), 2500); return; }
+    notes = {}; $("summary").hidden = true;
+    if (demo) {
+      goLive();
+      const steps = [{ name: "Anna Kowalska" }, { company: "Kowalski Logistics", website: "kowalski.pl" },
+        { need: PL ? "Automatyzacja ofertowania i odpowiedzi na maile" : "Automating quotes and email replies" },
+        { contact: "anna@kowalski.pl · +48 600 100 200" },
+        { meeting: PL ? "wtorek 24.11, 14:00 · Google Meet" : "Tuesday 24 Nov, 14:00 · Google Meet", next_step: PL ? "Zaproszenie wysłane mailem" : "Invite sent by email" }];
+      steps.forEach((s, i) => setTimeout(() => mode !== "idle" && showSummary(s), 1500 + i * 1800));
+      return;
+    }
     if (AGENT_ID.startsWith("WKLEJ")) { line.textContent = "Brakuje AGENT_ID w pliku index.html."; return; }
     btn.setAttribute("aria-busy", "true"); line.textContent = T.connecting;
     try { await navigator.mediaDevices.getUserMedia({ audio: true }); }
