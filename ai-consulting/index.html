@@ -5,55 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Robert Betlejewski · porozmawiaj o AI</title>
 <meta name="description" content="Zadaj pytanie o wdrożenie AI w firmie. Odpowiada głosowy agent Roberta Betlejewskiego.">
+<link rel="icon" href="/benchly-logo.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* Paleta z logo Benchly (Webflow) */
   :root {
-    --paper: #ffffff; --ink: #000000; --mute: #636363;
-    --well: #efefef; --hair: rgba(0,0,0,.14);
+    --paper: #ffffff; --ink: #1a212b; --mute: #5d6472;
+    --brand: #2e3c7d; --lilac: #c3b7cd; --blush: #efdfe9; --hair: #e4ebf3;
     color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --paper: #000000; --ink: #ffffff; --mute: #9c9c9c; --well: #161616; --hair: rgba(255,255,255,.18);
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --paper: #000000; --ink: #ffffff; --mute: #9c9c9c; --well: #161616; --hair: rgba(255,255,255,.18);
-    color-scheme: dark;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; }
   body {
     background: var(--paper); color: var(--ink);
-    font: 400 16px/1.45 "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font: 400 16px/1.5 Poppins, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     display: grid; place-items: center;
-    padding: calc(64px + env(safe-area-inset-top, 0px)) 24px calc(32px + env(safe-area-inset-bottom, 0px));
-    transition: background-color .5s ease, color .5s ease;
+    padding: calc(88px + env(safe-area-inset-top, 0px)) 16px calc(56px + env(safe-area-inset-bottom, 0px));
     -webkit-font-smoothing: antialiased;
   }
 
-  .theme {
-    position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px;
-    width: 44px; height: 44px; border: 0; border-radius: 50%;
-    background: transparent; color: var(--ink); cursor: pointer; display: grid; place-items: center;
+  .top {
+    position: fixed; top: calc(20px + env(safe-area-inset-top, 0px)); left: 0; right: 0;
+    display: flex; justify-content: center; pointer-events: none;
   }
-  .theme svg { width: 22px; height: 22px; transition: transform .5s cubic-bezier(.5,0,.2,1); }
-  :root[data-theme="dark"] .theme svg { transform: rotate(180deg); }
-  :focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+  .top a { pointer-events: auto; display: block; line-height: 0; }
+  .top img { height: 30px; width: auto; }
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 4px; border-radius: 6px; }
 
   main {
-    --w: min(80vw, 340px, calc((100svh - 300px) * .75));
+    --w: min(80vw, 320px, calc((100svh - 360px) * .75));
     width: var(--w); display: flex; flex-direction: column; align-items: center;
   }
+  .who { margin-bottom: 18px; text-align: center; }
+  .who h1 { font-size: 20px; font-weight: 500; letter-spacing: -.01em; }
+  .who p { font-size: 14px; color: var(--mute); margin-top: 2px; }
 
   /* Portret 3:4, jak okno rozmowy wideo */
   .portrait {
     position: relative; width: 100%; aspect-ratio: 3 / 4;
-    border-radius: 28px; overflow: hidden; background: var(--well);
+    border-radius: 28px; overflow: hidden; background: var(--blush);
   }
   .portrait img {
     width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block;
@@ -63,10 +56,15 @@
   .portrait.live img { filter: grayscale(0); transform: scale(1); }
   .portrait .initials {
     position: absolute; inset: 0; display: none; place-items: center;
-    font-size: calc(var(--w) * .22); font-weight: 500; letter-spacing: -.04em; color: var(--mute);
+    font-size: calc(var(--w) * .22); font-weight: 500; letter-spacing: -.04em; color: var(--brand);
   }
   .portrait.noimg img { display: none; }
   .portrait.noimg .initials { display: grid; }
+  .portrait::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    box-shadow: inset 0 0 0 0 var(--brand); transition: box-shadow .4s ease;
+  }
+  .portrait.live::after { box-shadow: inset 0 0 0 3px var(--brand); }
 
   /* Linia głosu */
   .wave { width: 100%; height: 64px; margin: 8px 0 12px; display: block; }
@@ -75,44 +73,45 @@
   .call {
     height: 52px; padding: 0 26px 0 22px; border-radius: 999px; cursor: pointer;
     display: inline-flex; align-items: center; gap: 10px;
-    font: 500 16px/1 inherit; font-family: inherit; letter-spacing: -.005em;
-    background: var(--ink); color: var(--paper); border: 1.5px solid var(--ink);
+    font: 500 16px/1 inherit; font-family: inherit;
+    background: var(--brand); color: #fff; border: 1.5px solid var(--brand);
     transition: background-color .25s ease, color .25s ease, transform .15s ease;
   }
   .call:hover { transform: translateY(-1px); }
   .call:active { transform: scale(.97); }
-  .call.live { background: transparent; color: var(--ink); }
+  .call.live { background: transparent; color: var(--brand); }
   .call svg { width: 20px; height: 20px; flex: none; }
   .call .i-stop, .call.live .i-mic { display: none; }
   .call.live .i-stop { display: block; }
   .call[aria-busy="true"] { opacity: .55; cursor: progress; }
 
   .line {
-    margin-top: 14px; min-height: 1.45em; max-width: 34ch; text-align: center; text-wrap: balance;
+    margin-top: 14px; min-height: 1.5em; max-width: 34ch; text-align: center; text-wrap: balance;
     font-size: 14px; color: var(--mute); font-variant-numeric: tabular-nums;
   }
-  .line b { font-weight: 500; color: var(--ink); margin-right: .8em; }
+  .line b { font-weight: 500; color: var(--brand); margin-right: .8em; }
 
   .foot {
-    position: fixed; left: 0; right: 0; bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    position: fixed; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     padding: 0 16px; text-align: center; font-size: 11.5px; line-height: 1.5; color: var(--mute);
   }
   .foot a { color: inherit; }
-  @media (max-height: 640px) { .foot { position: static; margin-top: 24px; } }
+  @media (max-height: 700px) {
+    body { padding-top: 24px; padding-bottom: 24px; }
+    .top { position: static; margin-bottom: 20px; }
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .foot { position: static; margin-top: 24px; }
+  }
 
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
 </style>
 </head>
 <body>
 
-<button class="theme" id="theme" type="button" aria-label="Przełącz motyw">
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor"/>
-  </svg>
-</button>
+<header class="top"><a href="/o-projekcie/" aria-label="Benchly"><img src="/benchly-logo.jpg" alt="Benchly" width="404" height="99"></a></header>
 
 <main>
+  <div class="who"><h1>Robert Betlejewski</h1><p>Wdrożenia AI w firmach</p></div>
   <div class="portrait" id="portrait">
     <!-- Zdjęcie: avatar.jpg obok index.html, pion 3:4 (np. 1200×1600), twarz w górnej 1/3 -->
     <img src="avatar.jpg" alt="Robert Betlejewski" onerror="this.parentElement.classList.add('noimg')">
@@ -147,17 +146,6 @@
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const demo = new URLSearchParams(location.search).has("demo");   // podgląd bez agenta: ?demo
   const IDLE = line.innerHTML;
-
-  /* ---------- motyw ---------- */
-  const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  const themeLabel = () => $("theme").setAttribute("aria-label", isDark() ? "Włącz jasny motyw" : "Włącz ciemny motyw");
-  try { const t = localStorage.getItem("theme"); if (t) root.dataset.theme = t; } catch {}
-  $("theme").addEventListener("click", () => {
-    root.dataset.theme = isDark() ? "light" : "dark";
-    try { localStorage.setItem("theme", root.dataset.theme); } catch {}
-    themeLabel();
-  });
-  themeLabel();
 
   /* ---------- linia głosu ---------- */
   const N = 26, ctx = cv.getContext("2d"), amp = new Float32Array(N);
@@ -200,7 +188,7 @@
     const ease = 1 - Math.pow(1 - grow, 3), x0 = w / 2 * (1 - ease), x1 = w - x0;
 
     ctx.clearRect(0, 0, w, h);
-    const ink = getComputedStyle(root).getPropertyValue("--ink").trim();
+    const ink = getComputedStyle(root).getPropertyValue("--brand").trim();
     ctx.strokeStyle = ink; ctx.lineWidth = 1.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
     ctx.globalAlpha = mode === "idle" ? .3 : 1;
 
