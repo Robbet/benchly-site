@@ -16,7 +16,7 @@
     color-scheme: light;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; }
-  html, body { min-height: 100%; }
+  html, body { min-height: 100%; overflow-x: clip; }
   body {
     background: radial-gradient(120% 80% at 50% 0%, #f6eef3 0%, var(--paper) 60%);
     color: var(--ink); -webkit-font-smoothing: antialiased;
@@ -26,39 +26,64 @@
   }
   :focus-visible { outline: 2px solid var(--brand); outline-offset: 4px; border-radius: 8px; }
 
-  .top { line-height: 0; }
-  .top img { height: 26px; width: auto; mix-blend-mode: multiply; }
+
 
   main {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    width: min(100%, 340px); --pw: min(100%, 320px, calc((100svh - 380px) * .75)); min-width: 220px; padding: 28px 0;
+    width: min(100%, 340px); --pw: min(100%, 300px, calc((100svh - 400px) / 1.12)); min-width: 220px; padding: 28px 0;
   }
 
-  .portrait {
-    position: relative; width: var(--pw); aspect-ratio: 3 / 4; border-radius: 28px; overflow: hidden;
-    background: linear-gradient(165deg, #f3e8ef, #e3e2f1);
-    box-shadow: 0 30px 60px -28px rgba(26,33,60,.4);
+  /* ---------- awatar: wycięta postać na kuli w barwach Benchly ---------- */
+  .avatar {
+    --near: 0; --level: 0; --mx: 50%; --my: 35%;
+    position: relative; width: var(--pw); aspect-ratio: 1 / 1.12; cursor: pointer; outline: none;
+    -webkit-tap-highlight-color: transparent; transition: transform .5s cubic-bezier(.2,.7,.2,1), width .5s ease;
   }
-  .portrait img {
-    width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block;
-    filter: grayscale(1); transform: scale(1.03);
-    transition: filter 1s ease, transform 1.4s cubic-bezier(.2,.7,.2,1);
+  .avatar:hover, .avatar:focus-visible { transform: translateY(-4px); }
+  .avatar:active { transform: scale(.98); }
+  .orb {
+    position: absolute; left: 0; right: 0; bottom: 0; aspect-ratio: 1; border-radius: 50%;
+    background:
+      radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255, calc(.18 + .4 * var(--near))) 0%, transparent 45%),
+      linear-gradient(155deg, #2e3c7d 0%, #5a5aa6 38%, #a99ac6 68%, #efdfe9 100%);
+    box-shadow:
+      0 0 0 calc(6px * var(--level)) rgba(195,183,205,.45),
+      0 calc(24px + 10px * var(--near)) calc(50px + 50px * var(--near)) calc(-10px + 6px * var(--near)) rgba(70,64,150, calc(.35 + .3 * var(--near)));
+    transform: scale(calc(1 + .05 * var(--level)));
+    transition: box-shadow .4s ease;
+    animation: breathe 6s ease-in-out infinite;
   }
-  .portrait.live img { filter: none; transform: scale(1); }
-  .portrait .initials {
-    position: absolute; inset: 0; display: none; place-items: center;
-    font-size: clamp(64px, 10vw, 96px); font-weight: 500; letter-spacing: -.05em; color: var(--brand);
+  @keyframes breathe { 50% { filter: saturate(1.15) brightness(1.04); } }
+  .orb::before {   /* poświata dookoła, rośnie przy zbliżeniu kursora */
+    content: ""; position: absolute; inset: -14%; border-radius: 50%; z-index: -1; pointer-events: none;
+    background: radial-gradient(circle, rgba(169,154,198, calc(.25 + .45 * var(--near))) 0%, rgba(239,223,233,0) 68%);
+    transform: scale(calc(.92 + .12 * var(--near) + .15 * var(--level)));
   }
-  .portrait.noimg img { display: none; }
-  .portrait.noimg .initials { display: grid; }
-
-  .wave { position: absolute; left: 0; right: 0; bottom: 44px; width: 100%; height: 48px; display: block; }
-  .portrait::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-    background: linear-gradient(to top, rgba(20,26,48,.45), transparent 40%); opacity: 0; transition: opacity .6s ease; }
-  .portrait.live::after { opacity: 1; }
+  .orb::after {    /* obracający się połysk w trakcie rozmowy */
+    content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; opacity: 0;
+    background: conic-gradient(from 0deg, transparent 0 60%, rgba(255,255,255,.35) 75%, transparent 90%);
+    animation: spin 5s linear infinite; transition: opacity .6s ease;
+  }
+  @keyframes spin { to { transform: rotate(1turn); } }
+  .avatar.live .orb::after { opacity: 1; }
+  .avatar.live .orb { animation: none; }
+  .cut {   /* sylwetka wychodzi głową ponad kulę, dół przycięty do okręgu */
+    position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+    border-radius: 0 0 50% 50% / 0 0 44.65% 44.65%;
+  }
+  .cut img {
+    position: absolute; left: -5%; bottom: 0; width: 110%; height: auto; display: block;
+    transform-origin: 50% 100%; transition: transform .6s cubic-bezier(.2,.7,.2,1);
+    filter: drop-shadow(0 10px 18px rgba(20,26,48,.25));
+  }
+  .avatar:hover .cut img, .avatar.live .cut img { transform: scale(1.025); }
+  .avatar .initials { position: absolute; left: 0; right: 0; bottom: 0; aspect-ratio: 1; display: none; place-items: center;
+    font-size: clamp(56px, 9vw, 88px); font-weight: 500; letter-spacing: -.05em; color: #fff; }
+  .avatar.noimg .cut { display: none; }
+  .avatar.noimg .initials { display: grid; }
 
   .call {
-    position: relative; z-index: 1; margin-top: -36px; width: 72px; height: 72px; border-radius: 50%; cursor: pointer;
+    position: relative; z-index: 2; margin-top: -40px; width: 72px; height: 72px; border-radius: 50%; cursor: pointer;
     display: grid; place-items: center; background: var(--brand); color: #fff; border: 4px solid var(--paper);
     box-shadow: 0 12px 28px -10px rgba(46,60,125,.7);
     transition: background-color .25s ease, color .25s ease, transform .15s ease;
@@ -66,7 +91,7 @@
   .call::before { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--brand);
     animation: halo 2.6s ease-out infinite; pointer-events: none; }
   @keyframes halo { from { transform: scale(1); opacity: .5; } to { transform: scale(1.45); opacity: 0; } }
-  .call:hover { transform: scale(1.05); }
+  .call:hover, .avatar:hover + .call { transform: scale(1.08); }
   .call:active { transform: scale(.95); }
   .call svg { width: 28px; height: 28px; }
   .call .i-stop, .call.live .i-mic { display: none; }
@@ -85,12 +110,27 @@
     font-size: 11px; font-weight: 500; color: var(--brand); background: rgba(46,60,125,.08); }
   main.live .steps, main.live .sub { display: none; }
   .line:empty { display: none; }
+  .summary { margin-top: 18px; width: min(100%, 340px); padding: 16px 18px; border-radius: 18px;
+    background: rgba(255,255,255,.85); border: 1px solid var(--hair); box-shadow: 0 12px 30px -20px rgba(26,33,60,.35);
+    animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
+  .summary[hidden] { display: none; }
+  .summary h2 { font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--brand); margin-bottom: 8px; }
+  .summary dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13.5px; }
+  .summary dt { color: var(--mute); }
+  .summary dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+  main:has(.summary:not([hidden])) .avatar { width: min(var(--pw), 46vw, 200px); }
+  main:has(.summary:not([hidden])) .steps, main:has(.summary:not([hidden])) .sub { display: none; }
   .line { margin-top: 4px; min-height: 1.5em; text-align: center; text-wrap: balance;
     font-size: 13.5px; color: var(--mute); font-variant-numeric: tabular-nums; }
   .line b { font-weight: 500; color: var(--brand); margin-right: .8em; }
 
-  .foot { font-size: 11.5px; color: var(--mute); text-align: center; opacity: .8; }
+  .foot { width: 100%; max-width: 1120px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+    font-size: 11px; line-height: 1.45; color: var(--mute); }
   .foot a { color: inherit; text-underline-offset: 3px; }
+  .brand { display: flex; flex-direction: column; gap: 4px; }
+  .brand img { height: 24px; width: auto; mix-blend-mode: multiply; display: block; }
+  .eu img { height: 44px; width: auto; max-width: 100%; display: block; mix-blend-mode: multiply; }
+  @media (max-width: 520px) { .eu img { height: 34px; } .brand img { height: 20px; } .brand span { display: none; } }
 
   main > * { animation: rise .8s cubic-bezier(.2,.7,.2,1) both; }
   main > :nth-child(n+2) { animation-delay: .12s; }
@@ -100,14 +140,13 @@
 </head>
 <body>
 
-<header class="top"><a href="/o-projekcie/" aria-label="Benchly"><img src="/benchly-logo.jpg" alt="Benchly" width="404" height="99"></a></header>
 
 <main>
-  <div class="portrait" id="portrait">
-    <!-- Zdjęcie: avatar.jpg obok index.html, pion 3:4 (np. 1200×1600), twarz w górnej 1/3 -->
-    <img src="avatar.jpg" alt="Robert Betlejewski" onerror="this.parentElement.classList.add('noimg')">
+  <div class="avatar" id="portrait" role="button" tabindex="0" aria-label="Let's talk">
+    <div class="orb"></div>
     <div class="initials" aria-hidden="true">RB</div>
-    <canvas class="wave" id="wave" aria-hidden="true"></canvas>
+    <!-- Zdjęcie: avatar.png obok index.html, kwadrat z przezroczystym tłem, głowa u góry -->
+    <div class="cut"><img src="avatar.png" alt="Robert Betlejewski" width="900" height="900" onerror="this.closest('.avatar').classList.add('noimg')"></div>
   </div>
 
   <button class="call" id="call" type="button" aria-label="Let's talk">
@@ -121,10 +160,20 @@
   <p class="sub" id="sub">Tell me what you need. I'll book you a meeting with the real Robert.</p>
   <ol class="steps" id="steps"><li>Describe the job</li><li>See what I can do</li><li>Book a meeting</li></ol>
   <p class="line" id="line" aria-live="polite"></p>
+  <section class="summary" id="summary" aria-live="polite" hidden>
+    <h2 id="sumTitle">Summary</h2>
+    <dl id="sumList"></dl>
+  </section>
 </main>
 
 <footer class="foot">
-  <a href="/o-projekcie/">Bench Sp. z o.o.</a> · NIP 9662157768 · KRS 0000945460
+  <div class="brand">
+    <a href="/o-projekcie/" aria-label="Benchly · Bench Sp. z o.o."><img src="/benchly-logo.jpg" alt="Benchly" width="404" height="99"></a>
+    <span><a href="/o-projekcie/">Bench Sp. z o.o.</a> · NIP 9662157768 · KRS 0000945460</span>
+  </div>
+  <a class="eu" href="/o-projekcie/" aria-label="Fundusze Europejskie Polska Wschodnia, Unia Europejska, Europejski Fundusz Rozwoju Regionalnego">
+    <img src="/fe-popw-ue-efrr.png" alt="Fundusze Europejskie – Polska Wschodnia · Unia Europejska – Europejski Fundusz Rozwoju Regionalnego" onerror="this.closest('.eu').hidden = true">
+  </a>
 </footer>
 
 <script type="module">
@@ -134,7 +183,7 @@
   /* ========================== */
 
   const $ = (id) => document.getElementById(id);
-  const root = document.documentElement, portrait = $("portrait"), btn = $("call"), line = $("line"), cv = $("wave");
+  const root = document.documentElement, portrait = $("portrait"), btn = $("call"), line = $("line");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const demo = new URLSearchParams(location.search).has("demo");   // podgląd bez agenta: ?demo
   /* ---------- język: polski system → PL, wszystko inne → EN ---------- */
@@ -145,82 +194,65 @@
     steps: ["Opowiedz o zleceniu", "Sprawdzę, co mogę zrobić", "Umówię spotkanie"],
     idle: "Zapytaj mnie o&nbsp;AI w&nbsp;Twojej firmie", talk: "Porozmawiaj", end: "Zakończ", connecting: "Łączę…",
     speaking: "Mówię", listening: "Słucham", thanks: "Dzięki za rozmowę!",
+    sum: { title: "Podsumowanie rozmowy", name: "Imię", company: "Firma", need: "Potrzeba", contact: "Kontakt", meeting: "Spotkanie", next_step: "Dalej" },
     noMic: "Brak dostępu do mikrofonu. Zezwól na niego w przeglądarce i spróbuj ponownie.",
     dropped: "Rozmowa się przerwała. Spróbuj ponownie.", failed: "Nie udało się połączyć. Sprawdź internet i spróbuj ponownie.",
   } : {
     title: "Robert Betlejewski · talk about AI", tagline: "AI implementation for businesses",
     idle: "Ask me about AI in your company", talk: "Let's talk", end: "End call", connecting: "Connecting…",
     speaking: "Speaking", listening: "Listening", thanks: "Thanks for the chat!",
+    sum: { title: "Call summary", name: "Name", company: "Company", need: "Need", contact: "Contact", meeting: "Meeting", next_step: "Next" },
     noMic: "No microphone access. Allow it in your browser and try again.",
     dropped: "The call dropped. Please try again.", failed: "Couldn't connect. Check your internet and try again.",
   };
   if (PL) {
     root.lang = "pl"; document.title = T.title;
-    btn.setAttribute("aria-label", T.talk);
+    btn.setAttribute("aria-label", T.talk); portrait.setAttribute("aria-label", T.talk);
     $("sub").textContent = T.sub; $("steps").innerHTML = T.steps.map(t => `<li>${t}</li>`).join("");
   }
   const IDLE = line.innerHTML;
 
-  /* ---------- linia głosu ---------- */
-  const N = 26, ctx = cv.getContext("2d"), amp = new Float32Array(N);
-  let mode = "idle", convo = null, draw0 = performance.now();
-
-  function resize() {
-    const d = devicePixelRatio || 1;
-    cv.width = cv.clientWidth * d; cv.height = cv.clientHeight * d; ctx.setTransform(d, 0, 0, d, 0, 0);
-  }
-  addEventListener("resize", resize); resize();
-
-  function spectrum(src) {                         // środek linii = niskie tony, brzegi = wysokie
-    const out = new Float32Array(N);
-    if (!src || !src.length) return out;
-    const usable = Math.floor(src.length * .3), half = N / 2;
-    for (let i = 0; i < N; i++) {
-      const k = Math.abs(i - half + .5) / half;
-      out[i] = src[Math.floor(k * (usable - 1))] / 255;
+  /* ---------- podsumowanie (client tool "show_summary" wołany przez agenta) ---------- */
+  function showSummary(p = {}) {
+    const list = $("sumList"); list.replaceChildren();
+    $("sumTitle").textContent = T.sum.title;
+    for (const k of ["name", "company", "need", "contact", "meeting", "next_step"]) {
+      const v = String(p[k] ?? "").trim().slice(0, 300);
+      if (!v) continue;
+      const dt = document.createElement("dt"), dd = document.createElement("dd");
+      dt.textContent = T.sum[k]; dd.textContent = v; list.append(dt, dd);
     }
-    return out;
-  }
-  function fake(t, scale) {                        // tylko ?demo
-    const out = new Float32Array(N), half = N / 2;
-    for (let i = 0; i < N; i++) {
-      const k = Math.abs(i - half + .5) / half;
-      out[i] = scale * (1 - k * .7) * (.55 + .45 * Math.sin(t / 90 + i * 1.7)) * (.7 + .3 * Math.sin(t / 310));
-    }
-    return out;
+    $("summary").hidden = !list.children.length;
+    return "shown";
   }
 
-  function draw(t) {
-    const w = cv.clientWidth, h = cv.clientHeight, mid = h / 2;
-    let target = null;
-    if (demo && mode !== "idle") target = fake(t, mode === "speaking" ? 1 : .25);
-    else if (convo && mode === "speaking") target = spectrum(convo.getOutputByteFrequencyData?.());
-    else if (convo && mode === "listening") target = spectrum(convo.getInputByteFrequencyData?.()).map(v => v * .5);
-    for (let i = 0; i < N; i++) amp[i] += ((target ? target[i] : 0) - amp[i]) * .22;
+  /* ---------- głos → poświata, kursor → podświetlenie ---------- */
+  let mode = "idle", convo = null, level = 0, near = 0, nearT = 0;
+  const avg = (src) => { if (!src || !src.length) return 0; const n = Math.floor(src.length * .4); let t = 0; for (let i = 0; i < n; i++) t += src[i]; return t / n / 255; };
 
-    const grow = reduced ? 1 : Math.min(1, (t - draw0) / 900);   // na starcie linia rośnie od środka
-    const ease = 1 - Math.pow(1 - grow, 3), x0 = w / 2 * (1 - ease), x1 = w - x0;
+  addEventListener("pointermove", (e) => {
+    if (e.pointerType === "touch") return;
+    const r = portrait.getBoundingClientRect(), R = r.width / 2;
+    const cx = r.left + R, cy = r.bottom - R, d = Math.hypot(e.clientX - cx, e.clientY - cy);
+    nearT = Math.max(0, Math.min(1, 1 - (d - R) / (R * 2.2)));
+    portrait.style.setProperty("--mx", `${Math.max(10, Math.min(90, (e.clientX - r.left) / r.width * 100))}%`);
+    portrait.style.setProperty("--my", `${Math.max(10, Math.min(90, (e.clientY - (r.bottom - 2 * R)) / (2 * R) * 100))}%`);
+  });
+  document.addEventListener("pointerleave", () => { nearT = 0; });
 
-    ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.75; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.globalAlpha = mode === "idle" ? .45 : 1;
-
-    const pts = [];
-    for (let i = 0; i <= N + 1; i++) {
-      const u = i / (N + 1), env = Math.sin(Math.PI * u);
-      const a = i === 0 || i === N + 1 ? 0 : amp[i - 1];
-      pts.push([x0 + (x1 - x0) * u, mid + (i % 2 ? -1 : 1) * Math.pow(a, .7) * env * (h * .48)]);
-    }
-    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i < pts.length - 1; i++) {
-      const xc = (pts[i][0] + pts[i + 1][0]) / 2, yc = (pts[i][1] + pts[i + 1][1]) / 2;
-      ctx.quadraticCurveTo(pts[i][0], pts[i][1], xc, yc);
-    }
-    ctx.lineTo(pts.at(-1)[0], pts.at(-1)[1]); ctx.stroke();
-    ctx.globalAlpha = 1;
-    requestAnimationFrame(draw);
+  function frame(t) {
+    let target = 0;
+    if (demo && mode !== "idle") target = mode === "speaking" ? .45 + .35 * Math.abs(Math.sin(t / 140)) : .12;
+    else if (convo && mode === "speaking") target = Math.min(1, avg(convo.getOutputByteFrequencyData?.()) * 2.2);
+    else if (convo && mode === "listening") target = Math.min(1, avg(convo.getInputByteFrequencyData?.()) * 1.6) * .6;
+    level += (target - level) * .2;
+    const hover = portrait.matches(":hover") ? 1 : 0;
+    near += (Math.max(nearT, hover, mode !== "idle" ? .6 : 0) - near) * .12;
+    portrait.style.setProperty("--level", reduced ? 0 : level.toFixed(3));
+    portrait.style.setProperty("--near", near.toFixed(3));
+    requestAnimationFrame(frame);
   }
-  requestAnimationFrame(draw);
+  requestAnimationFrame(frame);
 
   /* ---------- rozmowa ---------- */
   let Conversation = null, clock = 0, t0 = 0;
@@ -230,19 +262,20 @@
   function goLive() {
     btn.removeAttribute("aria-busy");
     btn.classList.add("live"); portrait.classList.add("live"); btn.parentElement.classList.add("live");
-    btn.setAttribute("aria-label", T.end);
+    btn.setAttribute("aria-label", T.end); portrait.setAttribute("aria-label", T.end);
     mode = "listening"; t0 = Date.now(); tick(); clock = setInterval(tick, 500);
   }
   function goIdle(msg) {
     clearInterval(clock); convo = null; mode = "idle";
     btn.removeAttribute("aria-busy");
     btn.classList.remove("live"); portrait.classList.remove("live"); btn.parentElement.classList.remove("live");
-    btn.setAttribute("aria-label", T.talk);
+    btn.setAttribute("aria-label", T.talk); portrait.setAttribute("aria-label", T.talk);
     line.innerHTML = msg ?? IDLE;
   }
 
   async function start() {
-    if (demo) { goLive(); return; }
+    $("summary").hidden = true;
+    if (demo) { goLive(); setTimeout(() => showSummary({ name: "Anna Kowalska", company: "Kowalski Logistics", need: PL ? "Automatyzacja ofertowania i odpowiedzi na maile" : "Automating quotes and email replies", contact: "anna@kowalski.pl", meeting: PL ? "wtorek 25.11, 14:00 · Google Meet" : "Tuesday 25 Nov, 14:00 · Google Meet", next_step: PL ? "Zaproszenie wysłane mailem" : "Invite sent by email" }), 2500); return; }
     if (AGENT_ID.startsWith("WKLEJ")) { line.textContent = "Brakuje AGENT_ID w pliku index.html."; return; }
     btn.setAttribute("aria-busy", "true"); line.textContent = T.connecting;
     try { await navigator.mediaDevices.getUserMedia({ audio: true }); }
@@ -255,6 +288,7 @@
         onConnect: goLive,
         onDisconnect: () => convo && goIdle(T.thanks),
         onError: (e) => { console.error(e); goIdle(T.dropped); },
+        clientTools: { show_summary: showSummary },
         onModeChange: ({ mode: m }) => { mode = m === "speaking" ? "speaking" : "listening"; tick(); },
       };
       try { convo = await Conversation.startSession({ ...opts, connectionType: "webrtc" }); }      // szybciej
@@ -265,14 +299,17 @@
     }
   }
 
-  btn.addEventListener("click", async () => {
+  async function toggle() {
     if (btn.getAttribute("aria-busy")) return;
     if (mode !== "idle") {
       const c = convo; convo = null;
       try { await c?.endSession(); } catch {}
       goIdle(T.thanks);
     } else start();
-  });
+  }
+  btn.addEventListener("click", toggle);
+  portrait.addEventListener("click", toggle);
+  portrait.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
 
   if (demo) setInterval(() => { if (mode !== "idle") mode = (Math.sin(Date.now() / 1100) + 1) / 2 > .4 ? "speaking" : "listening"; }, 200);
 </script>
