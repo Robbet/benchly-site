@@ -129,6 +129,11 @@
   .summary dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13.5px; }
   .summary dt { color: var(--mute); }
   .summary dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; border-radius: 6px; }
+  .resume { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hair); font-size: 13px; color: var(--mute); }
+  .resume[hidden] { display: none; }
+  .resume-btn { margin-top: 10px; height: 40px; padding: 0 18px; border-radius: 999px; border: 0; cursor: pointer;
+    font: 500 14px/1 inherit; font-family: inherit; background: var(--brand); color: #fff; box-shadow: 0 8px 20px -10px rgba(46,60,125,.7); }
+  .resume-btn:hover { transform: translateY(-1px); }
   .summary dd.fresh { animation: fresh 1.6s ease-out; }
   @keyframes fresh { from { background: var(--spot); box-shadow: 0 0 0 4px var(--spot); } }
   main:has(.summary:not([hidden])) .avatar { width: min(var(--pw), 46vw, 200px); }
@@ -211,6 +216,10 @@
   <section class="summary" id="summary" aria-live="polite" hidden>
     <h2 id="sumTitle">Summary</h2>
     <dl id="sumList"></dl>
+    <div class="resume" id="resume" hidden>
+      <p id="resumeText"></p>
+      <button type="button" class="resume-btn" id="resumeBtn">Finish the call</button>
+    </div>
   </section>
 </main>
 
@@ -240,6 +249,11 @@
     steps: ["Opowiedz o zleceniu", "Sprawdzę, co mogę zrobić", "Umówię spotkanie"],
     idle: "Zapytaj mnie o&nbsp;AI w&nbsp;Twojej firmie", talk: "Porozmawiaj", end: "Zakończ", connecting: "Łączę…",
     speaking: "Mówię", listening: "Słucham", thanks: "Dzięki za rozmowę!",
+    ending: "Kończę i przygotowuję podsumowanie…", endedByUser: "Rozmowa zakończona przez Ciebie. Dzięki!",
+    interrupted: "Rozmowa zakończona przed końcem – możesz zadzwonić ponownie albo napisać do Roberta.", topic: "Rozmowa o: ",
+    missing: { contact: "adresu e-mail", meeting: "terminu spotkania", need: "opisu, czego potrzebujesz" },
+    resume: (m) => `Do umówienia spotkania brakuje jeszcze ${m}. Połącz się ponownie – zaczniemy tam, gdzie skończyliśmy.`, resumeBtn: "Dokończ rozmowę",
+    and: " i ",
     sum: { title: "Podsumowanie rozmowy", live: "Notatki z rozmowy", name: "Imię", company: "Firma", website: "Strona", need: "Potrzeba", contact: "Kontakt", meeting: "Spotkanie", next_step: "Dalej" },
     noMic: "Brak dostępu do mikrofonu. Zezwól na niego w przeglądarce i spróbuj ponownie.",
     dropped: "Rozmowa się przerwała. Spróbuj ponownie.", failed: "Nie udało się połączyć. Sprawdź internet i spróbuj ponownie.",
@@ -247,6 +261,11 @@
     title: "Robert Betlejewski · talk about AI", tagline: "AI implementation for businesses",
     idle: "Ask me about AI in your company", talk: "Let's talk", end: "End call", connecting: "Connecting…",
     speaking: "Speaking", listening: "Listening", thanks: "Thanks for the chat!",
+    ending: "Ending and preparing a summary…", endedByUser: "You ended the call. Thanks!",
+    interrupted: "Call ended early – you can call again or email Robert.", topic: "Talked about: ",
+    missing: { contact: "your email", meeting: "a meeting time", need: "what you need" },
+    resume: (m) => `To book the meeting we still need ${m}. Call again – we'll pick up where we left off.`, resumeBtn: "Finish the call",
+    and: " and ",
     sum: { title: "Call summary", live: "Call notes", name: "Name", company: "Company", website: "Website", need: "Need", contact: "Contact", meeting: "Meeting", next_step: "Next" },
     noMic: "No microphone access. Allow it in your browser and try again.",
     dropped: "The call dropped. Please try again.", failed: "Couldn't connect. Check your internet and try again.",
@@ -262,7 +281,7 @@
   // Agent woła show_summary na bieżąco, gdy rozmówca poda nowe dane. Strona dopisuje pola (merge)
   // i pokazuje kartę dopiero, gdy pojawi się coś więcej niż samo imię.
   const FIELDS = ["name", "company", "website", "need", "contact", "meeting", "next_step"];
-  let notes = {};
+  let notes = {}, said = [], summaryWait = null;
   function renderSummary(changed = []) {
     const list = $("sumList"); list.replaceChildren();
     $("sumTitle").textContent = mode === "idle" ? T.sum.title : T.sum.live;
@@ -282,6 +301,7 @@
       if (v && v !== notes[k]) { notes[k] = v; changed.push(k); }
     }
     renderSummary(changed);
+    if (summaryWait && notes.need) { summaryWait(); summaryWait = null; }
     return "shown";
   }
 
@@ -358,7 +378,10 @@
   }
 
   async function start() {
-    notes = {}; $("summary").hidden = true;
+    $("resume").hidden = true;
+    const prev = resuming ? { ...notes } : null, prevMiss = resuming ? missingList().join(", ") : "";
+    resuming = false;
+    if (!prev) { notes = {}; said = []; $("summary").hidden = true; }
     if (demo) {
       goLive();
       const steps = [{ name: "Anna Kowalska" }, { company: "Kowalski Logistics", website: "kowalski.pl" },
@@ -377,8 +400,9 @@
       const opts = {
         agentId: AGENT_ID,
         ...(PL ? { overrides: { agent: { language: "pl" } } } : {}),
-        onConnect: goLive,
-        onDisconnect: () => convo && goIdle(T.thanks),
+        onConnect: () => { goLive(); if (prev) setTimeout(() => { try { convo?.sendContextualUpdate?.(RESUME_NOTE(prev, prevMiss)); } catch {} }, 300); },
+        onDisconnect: () => { if (convo) { fallbackSummary(); goIdle(T.thanks); showResume(); } },
+        onMessage: ({ source, message }) => { if (source === "user" && message) said.push(String(message).trim()); },
         onError: (e) => { console.error(e); goIdle(T.dropped); },
         clientTools: { show_summary: showSummary },
         onModeChange: ({ mode: m }) => { mode = m === "speaking" ? "speaking" : "listening"; tick(); },
@@ -391,13 +415,57 @@
     }
   }
 
+  const END_NOTE = PL
+    ? "[Informacja systemowa] Rozmówca właśnie zakończył rozmowę. Nic nie mów. Natychmiast wywołaj show_summary z wszystkim, co wiesz: w polu need napisz w 1–2 zdaniach ogólne podsumowanie, o czym była rozmowa, a w next_step: „Rozmowa zakończona przez rozmówcę – Robert się odezwie” (jeśli jest kontakt) albo „Rozmowa zakończona przez rozmówcę” (jeśli go nie ma)."
+    : "[System note] The caller has just ended the call. Do not speak. Immediately call show_summary with everything you know: in need, a one or two sentence general summary of what the conversation was about; in next_step: 'Call ended by the caller – Robert will get in touch' (if there is contact info) or 'Call ended by the caller' (if not).";
+
+  function fallbackSummary() {   // gdy agent nie zdążył: składamy z tego, co padło
+    if (!notes.need) {
+      const first = said.find(t => t.length > 12);
+      if (first) notes.need = T.topic + (first.length > 160 ? first.slice(0, 157) + "…" : first);
+    }
+    if (!notes.next_step && (notes.need || notes.contact || notes.company)) notes.next_step = T.interrupted;
+  }
+
+  const RESUME_NOTE = (n, miss) => (PL
+    ? "[Informacja systemowa] To ponowne połączenie tego samego rozmówcy. Wcześniej ustaliliście: " + JSON.stringify(n) + ". Brakuje: " + miss + ". Nie pytaj o to, co już wiesz. Krótko nawiąż do poprzedniej rozmowy i dokończ: zbierz brakujące dane i, jeśli trzeba, umów spotkanie."
+    : "[System note] This is the same caller reconnecting. Earlier you agreed: " + JSON.stringify(n) + ". Missing: " + miss + ". Do not ask for what you already know. Briefly refer to the earlier conversation and finish: collect the missing details and book the meeting if needed.");
+  let resuming = false;
+  function missingList() {
+    const m = [];
+    if (!notes.need) m.push("need");
+    if (!notes.contact) m.push("contact");
+    if (!notes.meeting && !/rekrut|recruit|parp|weryfik/i.test(notes.need || "")) m.push("meeting");
+    return m;
+  }
+  function showResume() {
+    const m = missingList(), box = $("resume");
+    if (!m.length) { box.hidden = true; return; }
+    const words = m.map(k => T.missing[k]);
+    $("resumeText").textContent = T.resume(words.length > 1 ? words.slice(0, -1).join(", ") + T.and + words.at(-1) : words[0]);
+    $("resumeBtn").textContent = T.resumeBtn;
+    box.hidden = false; $("summary").hidden = false;
+  }
+  $("resumeBtn").addEventListener("click", () => { if (mode === "idle") { resuming = true; start(); } });
+
+  async function endByUser() {
+    const c = convo;
+    btn.setAttribute("aria-busy", "true"); line.textContent = T.ending;
+    if (c && !notes.meeting) {   // poproś agenta o podsumowanie, wyciszony, max 5 s
+      try { c.setVolume?.({ volume: 0 }); c.sendContextualUpdate?.(END_NOTE); } catch {}
+      await Promise.race([new Promise(r => summaryWait = r), new Promise(r => setTimeout(r, 5000))]);
+      summaryWait = null;
+    }
+    convo = null;
+    try { await c?.endSession(); } catch {}
+    fallbackSummary();
+    goIdle(T.endedByUser); showResume();
+  }
+
   async function toggle() {
     if (btn.getAttribute("aria-busy")) return;
-    if (mode !== "idle") {
-      const c = convo; convo = null;
-      try { await c?.endSession(); } catch {}
-      goIdle(T.thanks);
-    } else start();
+    if (mode !== "idle") endByUser();
+    else start();
   }
   btn.addEventListener("click", toggle);
   portrait.addEventListener("click", toggle);
